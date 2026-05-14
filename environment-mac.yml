@@ -1,0 +1,60 @@
+# Local Mac (Apple Silicon) — orchestration host.
+# Cannot run CUDA kernels. Used for: editing, CPU/MPS reference impls,
+# Modal dispatch, SSH to GPU boxes, plotting.
+#
+# Create:   conda env create -f environment-mac.yml
+# Update:   conda env update -f environment-mac.yml --prune
+# Activate: conda activate kernels-mac
+name: kernels-mac
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+
+  # Core scientific Python
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - jupyterlab
+  - ipywidgets
+
+  # Testing / quality
+  - pytest
+  - pytest-xdist
+  - ruff
+  - black
+  - pre-commit
+  - mypy
+
+  # PyTorch with MPS (Apple Silicon GPU acceleration for CPU-reference work)
+  - pytorch::pytorch>=2.4
+  - pytorch::torchvision
+
+  # SSH / remote orchestration
+  - paramiko
+  - fabric
+
+  # CLI tooling
+  - gh
+
+  - pip:
+      # Cloud GPU dispatcher (Mac-side CLI)
+      - modal>=0.66
+
+      # Numerical / plotting helpers used by the bench + roofline scripts
+      - tabulate
+      - rich
+      - tqdm
+
+      # For reading .ncu-rep / .nsys-rep summaries copied back from the GPU box
+      - nsight-systems-cli; platform_system != "Darwin"  # skip on Mac
+
+      # Notebook utilities for the GPU Puzzles notebook (Week 1)
+      - numba
+
+      # YAML / TOML config loaders (autotune configs, perf baselines)
+      - pyyaml
+      - tomli

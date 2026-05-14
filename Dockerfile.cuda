@@ -1,0 +1,48 @@
+# CUDA 12.8 dev image — supports A100 (sm_80), H200 (sm_90a), B300 (sm_103a).
+# Build:  docker build -f Dockerfile.cuda -t kernels-gpu:cu128 .
+# Run:    docker run --rm -it --gpus all \
+#             -v $HOME/Code/gpu-kernels-lab:/workspace -w /workspace \
+#             --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 \
+#             kernels-gpu:cu128 bash
+FROM nvidia/cuda:12.8.0-devel-ubuntu22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG PYTHON_VERSION=3.11
+
+ENV PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH \
+    LANG=C.UTF-8 LC_ALL=C.UTF-8
+
+# System packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential ninja-build cmake git tmux htop curl wget vim less \
+        ca-certificates pkg-config libssl-dev zlib1g-dev \
+        nsight-compute-2024.3.2 nsight-systems-2024.4.1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Miniforge (smaller + faster than Miniconda)
+RUN ARCH=$(uname -m) && \
+    curl -fsSL "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh" -o /tmp/mf.sh && \
+    bash /tmp/mf.sh -b -p /opt/conda && rm /tmp/mf.sh
+
+# Python env
+RUN conda install -y python=${PYTHON_VERSION} pip && conda clean -afy
+
+# PyTorch matching CUDA 12.8 (Triton ships with it)
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cu128 torch
+
+# Workspace requirements
+COPY requirements-gpu.txt /tmp/requirements-gpu.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-gpu.txt
+
+# Reference repos (read-only; clone shallow to keep image small)
+RUN mkdir -p /opt/refs && cd /opt/refs && \
+    for r in NVIDIA/cutlass flashinfer-ai/flashinfer linkedin/Liger-Kernel \
+             deepseek-ai/DeepGEMM karpathy/llm.c NVIDIA/cccl \
+             srush/GPU-Puzzles srush/Triton-Puzzles siboehm/SGEMM_CUDA; do \
+        git clone --depth=1 "https://github.com/${r}.git" "$(basename $r)"; \
+    done
+
+WORKDIR /workspace
+CMD ["bash"]

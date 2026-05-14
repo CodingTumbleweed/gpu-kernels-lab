@@ -1,0 +1,50 @@
+# ROCm 6.2 dev image — supports MI300X (gfx942) and MI350 (gfx950).
+# Build:  docker build -f Dockerfile.rocm -t kernels-rocm:6.2 .
+# Run:    docker run --rm -it \
+#             --device /dev/kfd --device /dev/dri --group-add video \
+#             --ipc=host --shm-size 8G \
+#             -v $HOME/Code/gpu-kernels-lab:/workspace -w /workspace \
+#             kernels-rocm:6.2 bash
+FROM rocm/dev-ubuntu-22.04:6.2-complete
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG PYTHON_VERSION=3.11
+
+ENV PATH=/opt/conda/bin:/opt/rocm/bin:$PATH \
+    LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH \
+    LANG=C.UTF-8 LC_ALL=C.UTF-8
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential ninja-build cmake git tmux htop curl wget vim less \
+        ca-certificates pkg-config libssl-dev zlib1g-dev \
+        rocprofiler-dev rocprofiler-sdk-roctx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Miniforge
+RUN ARCH=$(uname -m) && \
+    curl -fsSL "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh" -o /tmp/mf.sh && \
+    bash /tmp/mf.sh -b -p /opt/conda && rm /tmp/mf.sh
+
+RUN conda install -y python=${PYTHON_VERSION} pip && conda clean -afy
+
+# PyTorch ROCm wheels (match the ROCm in the base image)
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/rocm6.2 torch
+
+# Common Python deps (subset of requirements-gpu.txt; no transformers/vllm — heavy + sometimes broken on ROCm)
+RUN pip install --no-cache-dir \
+        numpy scipy pandas matplotlib pytest pytest-xdist hypothesis \
+        ruff black mypy nvtx jupyterlab ipywidgets numba \
+        tabulate rich tqdm pyyaml tomli
+
+# Optional: omniperf (NCU-equivalent for ROCm)
+RUN pip install --no-cache-dir omniperf || echo "(omniperf install skipped — install manually if needed)"
+
+# Reference repos relevant to AMD work
+RUN mkdir -p /opt/refs && cd /opt/refs && \
+    git clone --depth=1 https://github.com/ROCm/composable_kernel.git && \
+    git clone --depth=1 https://github.com/ROCm/aiter.git && \
+    git clone --depth=1 https://github.com/bogdannadev/mfma-cdna-amd.git
+
+WORKDIR /workspace
+CMD ["bash"]
