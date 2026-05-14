@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+.python-version
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_meta
+
+# Build artifacts
+build/
+dist/
+*.so
+*.o
+*.obj
+*.exe
+*.out
+a.out
+*.dylib
+compile_commands.json
+
+# CUDA / Triton caches
+.triton/
+.nv/
+*.cubin
+*.fatbin
+*.ptx.tmp
+*.cudafe*
+
+# Profiling artifacts (commit the SUMMARY screenshots, not raw multi-GB dumps)
+*.ncu-rep
+*.nsys-rep
+*.qdrep
+*.qdstrm
+*.sqlite
+profile/raw/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+.cursor/
+*.swp
+
+# Local secrets / config
+.envrc
+secrets/

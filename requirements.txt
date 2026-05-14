@@ -1,0 +1,60 @@
+# Remote NVIDIA GPU box — pip requirements.
+# Install order:
+#   1. Create conda env first:
+#        conda create -n kernels-gpu python=3.11 -y
+#        conda activate kernels-gpu
+#   2. Install PyTorch matching your CUDA toolkit (pick ONE):
+#        # CUDA 12.8 (B300 + H200 + A100):
+#        pip install torch --index-url https://download.pytorch.org/whl/cu128
+#        # CUDA 12.6 (H200 + A100):
+#        pip install torch --index-url https://download.pytorch.org/whl/cu126
+#        # CUDA 12.4 (A100 only):
+#        pip install torch --index-url https://download.pytorch.org/whl/cu124
+#   3. Then:  pip install -r requirements-gpu.txt
+#
+# Triton ships with PyTorch 2.x; do NOT pip install -U triton separately
+# unless you've matched the PyTorch source build.
+
+# Numerical
+numpy
+scipy
+pandas
+matplotlib
+
+# Testing
+pytest
+pytest-xdist
+hypothesis
+
+# Code quality
+ruff
+black
+mypy
+
+# Profiling helpers
+nvtx                              # NVTX ranges from Python (Nsight Systems annotations)
+
+# Notebook (for GPU Puzzles, roofline plotting)
+jupyterlab
+ipywidgets
+numba                             # GPU Puzzles uses numba.cuda
+
+# Pretty CLI output for bench tables
+tabulate
+rich
+tqdm
+
+# YAML / TOML configs (autotune + perf baselines)
+pyyaml
+tomli
+
+# Optional: model-side tooling for Llama linear-layer accuracy checks (W7-W8)
+# Comment out if you don't need it on this box.
+transformers
+accelerate
+safetensors
+sentencepiece
+
+# Optional: vLLM (only on the H200 box, only after W11). Heavy install.
+# Uncomment when needed.
+# vllm
